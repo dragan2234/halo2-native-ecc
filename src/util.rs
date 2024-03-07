@@ -1,7 +1,7 @@
 use std::u128;
 
-use halo2_proofs::circuit::Value;
-use halo2_proofs::halo2curves::ff::PrimeField;
+use halo2_common::circuit::Value;
+use halo2curves::ff::PrimeField;
 use halo2curves::CurveAffine;
 
 pub(crate) fn leak<T: Copy + Default>(a: &Value<&T>) -> T {
@@ -91,8 +91,10 @@ where
 #[cfg(test)]
 mod test {
     use halo2_proofs::arithmetic::Field;
-    use halo2curves::grumpkin::Fq;
-    use halo2curves::grumpkin::Fr;
+    // use halo2curves::grumpkin::Fq;
+    // use halo2curves::grumpkin::Fr;
+    use halo2curves::bandersnatch::Fp as Fq;
+    use halo2curves::bandersnatch::Fr;
 
     use crate::util::byte_to_le_bits;
     use crate::util::to_le_bits;
