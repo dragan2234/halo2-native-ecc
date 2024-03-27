@@ -1,6 +1,6 @@
 use std::u128;
 
-use halo2_common::circuit::Value;
+use halo2_frontend::circuit::Value;
 use halo2curves::ff::PrimeField;
 use halo2curves::CurveAffine;
 

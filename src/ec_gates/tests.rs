@@ -9,11 +9,17 @@ use halo2_proofs::halo2curves::group::Curve;
 use halo2_proofs::halo2curves::group::Group;
 use halo2_proofs::plonk::Circuit;
 use halo2_proofs::plonk::ConstraintSystem;
-use halo2_proofs::plonk::Error;
-use halo2curves::grumpkin::Fq;
-use halo2curves::grumpkin::Fr;
-use halo2curves::grumpkin::G1Affine;
-use halo2curves::grumpkin::G1;
+use halo2_proofs::plonk::ErrorFront;
+// use halo2curves::grumpkin::Fq;
+// use halo2curves::grumpkin::Fr;
+// use halo2curves::grumpkin::G1Affine;
+// use halo2curves::grumpkin::G1;
+
+use halo2curves::bandersnatch::Fp as Fq;
+use halo2curves::bandersnatch::Fr;
+use halo2curves::bandersnatch::BandersnatchAffine as G1Affine;
+use halo2curves::bandersnatch::Bandersnatch as G1;
+
 
 use crate::chip::ECChip;
 use crate::config::ECConfig;
@@ -49,7 +55,7 @@ impl Circuit<Fq> for ECTestCircuit {
         &self,
         config: Self::Config,
         mut layouter: impl Layouter<Fq>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), ErrorFront> {
         let ec_chip = ECChip::construct(config.clone());
 
         layouter.assign_region(
@@ -63,16 +69,16 @@ impl Circuit<Fq> for ECTestCircuit {
                         &config,
                         &self.p1,
                         &mut offset,
-                    )?;
-                    ec_chip.enforce_on_curve(&mut region, &config, &p1, &mut offset)?;
+                    ).unwrap();
+                    ec_chip.enforce_on_curve(&mut region, &config, &p1, &mut offset);
                     p1
                 };
                 // unit test: load private
                 let _p2 =
-                    ec_chip.load_private_point(&mut region, &config, &self.p2, &mut offset)?;
-                let p3 = ec_chip.load_private_point(&mut region, &config, &self.p3, &mut offset)?;
-                let p4 = ec_chip.load_private_point(&mut region, &config, &self.p4, &mut offset)?;
-                let p5 = ec_chip.load_private_point(&mut region, &config, &self.p5, &mut offset)?;
+                    ec_chip.load_private_point(&mut region, &config, &self.p2, &mut offset).unwrap();
+                let p3 = ec_chip.load_private_point(&mut region, &config, &self.p3, &mut offset).unwrap();
+                let p4 = ec_chip.load_private_point(&mut region, &config, &self.p4, &mut offset).unwrap();
+                let p5 = ec_chip.load_private_point(&mut region, &config, &self.p5, &mut offset).unwrap();
 
                 // unit test: point addition with 1
                 {
@@ -81,13 +87,13 @@ impl Circuit<Fq> for ECTestCircuit {
                         &config,
                         &self.p1,
                         &mut offset,
-                    )?;
+                    ).unwrap();
                     let p2 = ec_chip.load_private_point_unchecked(
                         &mut region,
                         &config,
                         &self.p2,
                         &mut offset,
-                    )?;
+                    ).unwrap();
                     let bit = ec_chip.load_private_field(
                         &mut region,
                         &config,
@@ -101,7 +107,7 @@ impl Circuit<Fq> for ECTestCircuit {
                         &p2,
                         &bit,
                         &mut offset,
-                    )?;
+                    ).unwrap();
 
                     region.constrain_equal(p3.x.cell(), p3_rec.x.cell())?;
                     region.constrain_equal(p3.y.cell(), p3_rec.y.cell())?;
@@ -114,19 +120,19 @@ impl Circuit<Fq> for ECTestCircuit {
                         &config,
                         &self.p1,
                         &mut offset,
-                    )?;
+                    ).unwrap();
                     let p2 = ec_chip.load_private_point_unchecked(
                         &mut region,
                         &config,
                         &self.p2,
                         &mut offset,
-                    )?;
+                    ).unwrap();
                     let bit = ec_chip.load_private_field(
                         &mut region,
                         &config,
                         &Fq::from(0),
                         &mut offset,
-                    )?;
+                    ).unwrap();
                     let p3_rec = ec_chip.conditional_point_add(
                         &mut region,
                         &config,
@@ -134,7 +140,7 @@ impl Circuit<Fq> for ECTestCircuit {
                         &p2,
                         &bit,
                         &mut offset,
-                    )?;
+                    ).unwrap();
 
                     region.constrain_equal(p1.x.cell(), p3_rec.x.cell())?;
                     region.constrain_equal(p1.y.cell(), p3_rec.y.cell())?;
@@ -147,8 +153,8 @@ impl Circuit<Fq> for ECTestCircuit {
                         &config,
                         &self.p1,
                         &mut offset,
-                    )?;
-                    let p4_rec = ec_chip.point_double(&mut region, &config, &p1, &mut offset)?;
+                    ).unwrap();
+                    let p4_rec = ec_chip.point_double(&mut region, &config, &p1, &mut offset).unwrap();
 
                     region.constrain_equal(p4.x.cell(), p4_rec.x.cell())?;
                     region.constrain_equal(p4.y.cell(), p4_rec.y.cell())?;
@@ -158,7 +164,7 @@ impl Circuit<Fq> for ECTestCircuit {
                 {
                     let start = offset;
                     let _scalar_cells =
-                        ec_chip.decompose_scalar(&mut region, &config, &self.s, &mut offset)?;
+                        ec_chip.decompose_scalar(&mut region, &config, &self.s, &mut offset).unwrap();
                     println!("scalar decompose uses {} rows", offset - start);
                 }
 
@@ -166,14 +172,14 @@ impl Circuit<Fq> for ECTestCircuit {
                 {
                     let start = offset;
                     let p5_rec =
-                        ec_chip.point_mul(&mut region, &config, &self.p1, &self.s, &mut offset)?;
+                        ec_chip.point_mul(&mut region, &config, &self.p1, &self.s, &mut offset).unwrap();
                     region.constrain_equal(p5.x.cell(), p5_rec.x.cell())?;
                     region.constrain_equal(p5.y.cell(), p5_rec.y.cell())?;
                     println!("curve mul uses {} rows", offset - start);
                 }
 
                 // pad the last two rows
-                ec_chip.pad(&mut region, &config, &mut offset)?;
+                ec_chip.pad(&mut region, &config, &mut offset).unwrap();
 
                 Ok(())
             },

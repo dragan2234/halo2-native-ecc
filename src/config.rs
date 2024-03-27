@@ -8,7 +8,7 @@ use halo2_proofs::plonk::Column;
 use halo2_proofs::plonk::Expression;
 use halo2_proofs::plonk::Selector;
 use halo2_proofs::poly::Rotation;
-use halo2_common::plonk::VirtualCells;
+use halo2_frontend::plonk::VirtualCells;
 
 /// Three advices and two additions
 #[derive(Clone, Debug)]
