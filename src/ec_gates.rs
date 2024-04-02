@@ -146,10 +146,10 @@ where
     ) -> Result<Self::AssignedECPoint, Error> {
 
         // let ifje = p.is_identity().into();
-        println!("print is: {:?}:", p.coordinates());
+        // println!("print is: {:?}:", p.coordinates());
         let p = p.coordinates().unwrap(); // 18026174705495711157233938068904690894407602835950541490148672285549697209731
-        println!("print X is: {:?}:", p.x());
-        println!("print Y is: {:?}:", p.y());
+        // println!("print X is: {:?}:", p.x());
+        // println!("print Y is: {:?}:", p.y());
 
         let x = region.assign_advice(|| "x", config.a, *offset, || Value::known(*p.x()))?;
         let y = region.assign_advice(|| "y", config.b, *offset, || Value::known(*p.y()))?;
@@ -178,7 +178,9 @@ where
             println!(
                 "[on curve check]           selector: {}, point: {}",
                 *offset - 1,
-                p.offset
+                p.offset,
+                // p.x,
+                // p.y
             );
         }
 

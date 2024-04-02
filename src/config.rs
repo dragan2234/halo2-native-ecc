@@ -80,9 +80,9 @@ where
 
         // let res = one.clone() / divider_1.clone();
         //                          (x3 * (1+d*x1*x2*y1*y2) - x1*y2+y1*x2)
-        let x3_comp = a2.clone() * divider_1.clone() - dividend_1.clone();
+        let x3_comp = a2.clone() * divider_1 - dividend_1;
 
-        let y3_comp = b2.clone() * divider_2.clone() - dividend_2.clone();
+        let y3_comp = b2.clone() * divider_2 - dividend_2;
 
         //      (x2-x1)/(y2-y1) = (x3-x1)/(-y3-y1)
         // =>   (x3-x1)(y2-y1) + (x2-x1)(y3+y1) = 0
@@ -112,16 +112,36 @@ where
 
     /// (x1, y1) and (x3, -y3) are on a tangential line of the curve
     pub(crate) fn ec_double_gate(&self, meta: &mut VirtualCells<F>) -> Expression<F> {
-        let two = Expression::Constant(F::from(2));
-        let three = Expression::Constant(F::from(3));
-        // FIXME: currently hardcoded for Grumpkin curve
-        let curve_param_b = -F::from(78675968000000);
-        let curve_param_b_expr = Expression::Constant(curve_param_b);
+        let one = Expression::Constant(F::ONE);
+
+
+        let constant_a = F::from(5).neg();
+        let constant_d = F::from_repr(halo2curves::bandersnatch::BandersnatchTE::d().to_repr()).unwrap();
+
+        // let constant_d: F = halo2curves::bandersnatch::BandersnatchTE::d().try_into();
+        // FIXME: currently hardcoded for bandersnatch
+        let curve_param_a_expr = Expression::Constant(constant_a);
+        let curve_param_d_expr = Expression::Constant(constant_d);
+
+
+        // let two = Expression::Constant(F::from(2));
+        // let three = Expression::Constant(F::from(3));
+        // // FIXME: currently hardcoded for Grumpkin curve
+        // let curve_param_b = -F::from(78675968000000);
+        // let curve_param_b_expr = Expression::Constant(curve_param_b);
 
         let a0 = meta.query_advice(self.a, Rotation::cur());
         let b0 = meta.query_advice(self.b, Rotation::cur());
         let a1 = meta.query_advice(self.a, Rotation::next());
         let b1 = meta.query_advice(self.b, Rotation::next());
+
+
+
+        /*
+            (x1*y1+y1*x1) - x3 * (1+d*x1*x1*y1*y1) == 0
+            (y1*y1-a*x1*x1) - y3 * (1-d*x1*x1*y1*y1) == 0
+         */
+
 
         // the slope: 3^x1^2 / 2y^1 // actually:  3^x1^2 + a / 2y^1
         // therefore: 2y1 * (y3 + y1) + 3x1^2 * (x3 - x1) = 0
@@ -131,23 +151,31 @@ where
         // | x1 | y1 |
         // | x3 | y3 |
 
-        two * b0.clone() * (b1.clone() + b0) + (three * a0.clone() * a0.clone()) * (a1.clone() - a0)
-        // enforce the result is on curve
-        + a1.clone() * a1.clone() * a1
-            - b1.clone() * b1
-            + curve_param_b_expr
+        let x3_equation = a0.clone()*b0.clone() + b0.clone()*a0.clone() - a1.clone() * (one.clone() + curve_param_d_expr.clone() * a0.clone().square()*b0.clone().square());
+        let y3_equation = (b0.clone().square() - curve_param_a_expr.clone() * a0.clone().square()) - b1.clone() * (one.clone() - curve_param_d_expr.clone() * a0.clone().square()*b0.clone().square());
+
+        x3_equation + y3_equation
+        // TODO: enforce the result is on curve
+        // + a1.clone() * a1.clone() * a1
+        //     - b1.clone() * b1
+        //     + curve_param_b_expr
+        + one.clone()-one.clone()
     }
 
     /// (x1, y1) is on curve
+    /// TODO: change for bandersnatch
     pub(crate) fn on_curve_gate(&self, meta: &mut VirtualCells<F>) -> Expression<F> {
         // FIXME: currently hardcoded for Grumpkin curve
         let curve_param_b = -F::from(17);
         let curve_param_b_expr = Expression::Constant(curve_param_b);
 
+        let zero = Expression::Constant(F::from(0));
+
         let a0 = meta.query_advice(self.a, Rotation::cur());
         let b0 = meta.query_advice(self.b, Rotation::cur());
         // (1 - q1) * q2 * (a^3 - b^2 - 17) == c
-        a0.clone() * a0.clone() * a0 - b0.clone() * b0 + curve_param_b_expr
+        // a0.clone() * a0.clone() * a0 - b0.clone() * b0 + curve_param_b_expr
+        zero
     }
 
     /// partial bit decom

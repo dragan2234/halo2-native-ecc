@@ -78,11 +78,11 @@ where
     C: CurveAffine<Base = F>,
 {
     let x = F::from_str_vartime(
-        "18292374296067206172215749431916515128228165256807037435601971767767562625877",
+        "18743181854947712744276314946015096264026721778860333623839716915275138628836",
     )
     .unwrap();
     let y = F::from_str_vartime(
-        "8411761026004062292626067694055242675827541323706122037355419552115320964415",
+        "43352142484310984921680343085101029755736011421988478594111694112306153004843",
     )
     .unwrap();
     (C::from_xy(x, y).unwrap(), x, y)
@@ -91,16 +91,45 @@ where
 #[cfg(test)]
 mod test {
     use halo2_proofs::arithmetic::Field;
+    use halo2curves::bandersnatch;
     // use halo2curves::grumpkin::Fq;
     // use halo2curves::grumpkin::Fr;
-    use halo2curves::bandersnatch::Fp as Fq;
+    use halo2curves::bandersnatch::Fp;
     use halo2curves::bandersnatch::Fr;
+    use halo2curves::group::Curve;
 
     use crate::util::byte_to_le_bits;
     use crate::util::to_le_bits;
 
     use super::decompose_u128;
     use super::field_decompose;
+
+    #[test]
+    fn test_neg_generator_times_2_to_256() {
+        // 5BC8F5F97CD877D899AD88181CE5880FFB38EC08FFFB13FCFFFFFFFD00000003
+        // let neg_2_to_256 = Fq::from([
+        //     0xFFFFFFFD00000003,
+        //     0xFB38EC08FFFB13FC,
+        //     0x99AD88181CE5880F,
+        //     0x5BC8F5F97CD877D8
+        // ]);
+
+        let neg_2_to_256 = Fr::from_raw([
+                        0xFFFFFFFD00000003,
+            0xFB38EC08FFFB13FC,
+            0x99AD88181CE5880F,
+            0x5BC8F5F97CD877D8
+        ]);
+
+        let g_times_neg_2_to_256 = bandersnatch::BandersnatchTE::generator() * neg_2_to_256;
+        
+        let gqew = g_times_neg_2_to_256.to_affine().x;
+
+        println!("g_times_neg_2_to_256: x: {:?}", g_times_neg_2_to_256.to_affine().x);
+        println!("g_times_neg_2_to_256: y: {:?}", g_times_neg_2_to_256.to_affine().y);
+
+
+    }
 
     #[test]
     fn test_to_bites() {
@@ -140,7 +169,7 @@ mod test {
     fn test_field_decom() {
         let mut rng = ark_std::test_rng();
         let a = Fr::random(&mut rng);
-        let (_high, _low) = field_decompose::<Fq, Fr>(&a);
+        let (_high, _low) = field_decompose::<Fp, Fr>(&a);
 
         // println!("{:?}", a);
         // println!("{:?}", high);

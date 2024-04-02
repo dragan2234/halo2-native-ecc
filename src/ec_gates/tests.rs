@@ -73,7 +73,6 @@ impl Circuit<Fq> for ECTestCircuit {
                     ec_chip.enforce_on_curve(&mut region, &config, &p1, &mut offset).unwrap();
                     p1
                 };
-                println!("Eto kurca");
                 // unit test: load private
                 let _p2 =
                     ec_chip.load_private_point(&mut region, &config, &self.p2, &mut offset).unwrap();
@@ -112,6 +111,7 @@ impl Circuit<Fq> for ECTestCircuit {
 
                     region.constrain_equal(p3.x.cell(), p3_rec.x.cell())?;
                     region.constrain_equal(p3.y.cell(), p3_rec.y.cell())?;
+                    println!("here we are");
                 }
 
                 // unit test: point addition with 0
@@ -157,27 +157,27 @@ impl Circuit<Fq> for ECTestCircuit {
                     ).unwrap();
                     let p4_rec = ec_chip.point_double(&mut region, &config, &p1, &mut offset).unwrap();
 
-                    // region.constrain_equal(p4.x.cell(), p4_rec.x.cell())?;
-                    // region.constrain_equal(p4.y.cell(), p4_rec.y.cell())?;
+                    region.constrain_equal(p4.x.cell(), p4_rec.x.cell())?;
+                    region.constrain_equal(p4.y.cell(), p4_rec.y.cell())?;
                 }
 
                 // unit test: scalar decomposition
                 {
                     let start = offset;
                     let _scalar_cells =
-                        // ec_chip.decompose_scalar(&mut region, &config, &self.s, &mut offset).unwrap();
+                        ec_chip.decompose_scalar(&mut region, &config, &self.s, &mut offset).unwrap();
                     println!("scalar decompose uses {} rows", offset - start);
                 }
 
-                // unit test: curve mul
-                {
-                    let start = offset;
-                    let p5_rec =
-                        ec_chip.point_mul(&mut region, &config, &self.p1, &self.s, &mut offset).unwrap();
-                    // region.constrain_equal(p5.x.cell(), p5_rec.x.cell())?;
-                    // region.constrain_equal(p5.y.cell(), p5_rec.y.cell())?;
-                    println!("curve mul uses {} rows", offset - start);
-                }
+                // // unit test: curve mul
+                // {
+                //     let start = offset;
+                //     let p5_rec =
+                //         ec_chip.point_mul(&mut region, &config, &self.p1, &self.s, &mut offset).unwrap();
+                //     region.constrain_equal(p5.x.cell(), p5_rec.x.cell())?;
+                //     region.constrain_equal(p5.y.cell(), p5_rec.y.cell())?;
+                //     println!("curve mul uses {} rows", offset - start);
+                // }
 
                 // pad the last two rows
                 ec_chip.pad(&mut region, &config, &mut offset).unwrap();
@@ -189,15 +189,24 @@ impl Circuit<Fq> for ECTestCircuit {
         Ok(())
     }
 }
-
+// 
+// x: AssignedCell { value: Value { inner: Some(0x2a7a99b0870a6244304b9231050859771fe941cad1bcaede655d2278621a3466) },
+//  cell: Cell { region_index: RegionIndex(0), row_offset: 0, column: Column { index: 0, column_type: Advice } },
+//  _marker: PhantomData<bls12_381::scalar::Scalar> },
+// y: AssignedCell { value: Value { inner: Some(0x2663e58bc157a7cf84d49524700a147bb53489232ea5962c3765bbfe95004080) },
+//  cell: Cell { region_index: RegionIndex(0), row_offset: 0, column: Column { index: 1, column_type: Advice } },
+//  _marker: PhantomData<bls12_381::scalar::Scalar> } 
+// 41515536288062376014772236515869989659801672835942349428353392091902613913603
 #[test]
 fn test_ec_ops() {
     let k = 14;
 
     let mut rng = test_rng();
+    let sa = Fr::from(123321);
     let s = Fr::random(&mut rng);
     let p1 = G1::generator().to_affine();
-    let p2 = (G1::generator().to_affine() + G1::generator().to_affine()).to_affine();
+    let p2_mid = G1::generator() * sa;
+    let p2 = p2_mid.to_affine();
     let p3 = (p1 + p2).to_affine();
     let p4 = (p1 + p1).to_affine(); // x = 0x27da740ce8efabb990840ea27722c4842401ff3f6d72a7a7c15b36f312649583
     let p5 = p1.mul(s).to_affine(); // y = 0x5f3f87f2d96544e756407bd35120857e7c1a27f332751c2af08c4fd282aee507
@@ -217,22 +226,22 @@ fn test_ec_ops() {
     }
 
     // error case: add not equal
-    // {
-    //     let p3 = (p1 + p1).to_affine();
-    //     let circuit = ECTestCircuit {
-    //         s,
-    //         p1,
-    //         p2,
-    //         p3,
-    //         p4,
-    //         p5,
-    //     };
+    {
+        let p3 = (p1 + p1).to_affine();
+        let circuit = ECTestCircuit {
+            s,
+            p1,
+            p2,
+            p3,
+            p4,
+            p5,
+        };
 
-    //     let prover = MockProver::run(k, &circuit, vec![]).unwrap();
-    //     assert!(prover.verify().is_err());
-    // }
+        let prover = MockProver::run(k, &circuit, vec![]).unwrap();
+        assert!(prover.verify().is_err());
+    }
 
-    // // error case: double not equal
+    // error case: double not equal
     // {
     //     let p4 = (p1 + p2).to_affine();
     //     let circuit = ECTestCircuit {
