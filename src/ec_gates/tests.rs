@@ -15,10 +15,12 @@ use halo2_proofs::plonk::ErrorFront;
 // use halo2curves::grumpkin::G1Affine;
 // use halo2curves::grumpkin::G1;
 
+use halo2curves::bandersnatch;
 use halo2curves::bandersnatch::Fp as Fq;
 use halo2curves::bandersnatch::Fr;
 use halo2curves::bandersnatch::BandersnatchTEAffine as G1Affine;
 use halo2curves::bandersnatch::BandersnatchTE as G1;
+use halo2curves::ff::PrimeField;
 
 
 use crate::chip::ECChip;
@@ -170,14 +172,23 @@ impl Circuit<Fq> for ECTestCircuit {
                 }
 
                 // // unit test: curve mul
-                // {
-                //     let start = offset;
-                //     let p5_rec =
-                //         ec_chip.point_mul(&mut region, &config, &self.p1, &self.s, &mut offset).unwrap();
-                //     region.constrain_equal(p5.x.cell(), p5_rec.x.cell())?;
-                //     region.constrain_equal(p5.y.cell(), p5_rec.y.cell())?;
-                //     println!("curve mul uses {} rows", offset - start);
-                // }
+                {
+                    let start = offset;
+                    let p5_rec =
+                        ec_chip.point_mul(&mut region, &config, &self.p1, &self.s, &mut offset).unwrap();
+                    region.constrain_equal(p5.x.cell(), p5_rec.x.cell())?;
+                    region.constrain_equal(p5.y.cell(), p5_rec.y.cell())?;
+
+                    println!("p5.x.cell() is: {:?}", p5.x.value());
+                    println!("p5_rec.x.cell() is: {:?}", p5_rec.x.value());
+
+                    println!("p5.y.cell() is: {:?}", p5.y.value());
+                    println!("p5_rec.y.cell() is: {:?}", p5_rec.y.value());
+
+
+                    println!("curve mul uses {} rows", offset - start);
+                    println!("offset here is: {}", offset);
+                }
 
                 // pad the last two rows
                 ec_chip.pad(&mut region, &config, &mut offset).unwrap();
@@ -201,19 +212,20 @@ impl Circuit<Fq> for ECTestCircuit {
 fn test_ec_ops() {
     let k = 14;
 
+    // note: we are not using random values as random() doesn't work for generating random bandersnatch points
     let mut rng = test_rng();
-    let sa = Fr::from(123321);
-    let s = Fr::random(&mut rng);
-    let p1 = G1::generator().to_affine();
+    let sa = Fr::from(55);
+
+    let p1 = (G1::generator()* Fr::from(123123)).to_affine();
     let p2_mid = G1::generator() * sa;
     let p2 = p2_mid.to_affine();
     let p3 = (p1 + p2).to_affine();
-    let p4 = (p1 + p1).to_affine(); // x = 0x27da740ce8efabb990840ea27722c4842401ff3f6d72a7a7c15b36f312649583
-    let p5 = p1.mul(s).to_affine(); // y = 0x5f3f87f2d96544e756407bd35120857e7c1a27f332751c2af08c4fd282aee507
+    let p4 = (p1 + p1).to_affine(); 
+    let p5 = p1.mul(sa.clone()).to_affine();
 
     {
         let circuit = ECTestCircuit {
-            s,
+            s: sa,
             p1,
             p2,
             p3,
@@ -229,7 +241,7 @@ fn test_ec_ops() {
     {
         let p3 = (p1 + p1).to_affine();
         let circuit = ECTestCircuit {
-            s,
+            s: sa,
             p1,
             p2,
             p3,
@@ -242,18 +254,18 @@ fn test_ec_ops() {
     }
 
     // error case: double not equal
-    // {
-    //     let p4 = (p1 + p2).to_affine();
-    //     let circuit = ECTestCircuit {
-    //         s,
-    //         p1,
-    //         p2,
-    //         p3,
-    //         p4,
-    //         p5,
-    //     };
+    {
+        let p4 = (p1 + p2).to_affine();
+        let circuit = ECTestCircuit {
+            s: sa,
+            p1,
+            p2,
+            p3,
+            p4,
+            p5,
+        };
 
-    //     let prover = MockProver::run(k, &circuit, vec![]).unwrap();
-    //     assert!(prover.verify().is_err());
-    // }
+        let prover = MockProver::run(k, &circuit, vec![]).unwrap();
+        assert!(prover.verify().is_err());
+    }
 }

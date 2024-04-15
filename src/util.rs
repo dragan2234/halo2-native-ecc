@@ -71,18 +71,18 @@ pub(crate) fn decompose_u128(a: &u128) -> Vec<u64> {
 }
 
 #[inline]
-// hardcoded value for `-2^256 * generator` for Grumpkin curve
+// hardcoded value for `-2^256 * generator` for Bandersnatch curve
 pub(crate) fn neg_generator_times_2_to_256<C, F>() -> (C, F, F)
 where
     F: PrimeField<Repr = [u8; 32]>,
     C: CurveAffine<Base = F>,
 {
     let x = F::from_str_vartime(
-        "18743181854947712744276314946015096264026721778860333623839716915275138628836",
+        "11025583721552956980921245725224418805776405746874274924600918176127939423846",
     )
     .unwrap();
     let y = F::from_str_vartime(
-        "43352142484310984921680343085101029755736011421988478594111694112306153004843",
+        "19554274355227010597378090074353559709030141777714044885277836694909175034562",
     )
     .unwrap();
     (C::from_xy(x, y).unwrap(), x, y)
@@ -92,8 +92,6 @@ where
 mod test {
     use halo2_proofs::arithmetic::Field;
     use halo2curves::bandersnatch;
-    // use halo2curves::grumpkin::Fq;
-    // use halo2curves::grumpkin::Fr;
     use halo2curves::bandersnatch::Fp;
     use halo2curves::bandersnatch::Fr;
     use halo2curves::group::Curve;
@@ -104,32 +102,6 @@ mod test {
     use super::decompose_u128;
     use super::field_decompose;
 
-    #[test]
-    fn test_neg_generator_times_2_to_256() {
-        // 5BC8F5F97CD877D899AD88181CE5880FFB38EC08FFFB13FCFFFFFFFD00000003
-        // let neg_2_to_256 = Fq::from([
-        //     0xFFFFFFFD00000003,
-        //     0xFB38EC08FFFB13FC,
-        //     0x99AD88181CE5880F,
-        //     0x5BC8F5F97CD877D8
-        // ]);
-
-        let neg_2_to_256 = Fr::from_raw([
-                        0xFFFFFFFD00000003,
-            0xFB38EC08FFFB13FC,
-            0x99AD88181CE5880F,
-            0x5BC8F5F97CD877D8
-        ]);
-
-        let g_times_neg_2_to_256 = bandersnatch::BandersnatchTE::generator() * neg_2_to_256;
-        
-        let gqew = g_times_neg_2_to_256.to_affine().x;
-
-        println!("g_times_neg_2_to_256: x: {:?}", g_times_neg_2_to_256.to_affine().x);
-        println!("g_times_neg_2_to_256: y: {:?}", g_times_neg_2_to_256.to_affine().y);
-
-
-    }
 
     #[test]
     fn test_to_bites() {

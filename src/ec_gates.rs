@@ -270,19 +270,21 @@ where
         config.q2.enable(region, *offset - 1)?;
         let p1_witness = p1.witness();
         let p2 = (p1_witness + p1_witness).to_affine();
-        let p2 = self.load_private_point_unchecked(region, config, &p2, offset)?;
+        let p2_asigned = self.load_private_point_unchecked(region, config, &p2, offset)?;
 
         #[cfg(feature = "verbose")]
         {
             println!(
-                "[point double]             selector: {}, points: {} {}",
+                "[point double]             selector: {}, points: {} {}, \n x: {:?} \n, y: {:?} \n ",
                 *offset - 1,
                 p1.offset,
-                p2.offset,
+                p2_asigned.offset,
+                p2_asigned.x.value(),
+                p2_asigned.y.value()
             );
         }
 
-        Ok(p2)
+        Ok(p2_asigned)
     }
 
     /// Decompose a scalar into a vector of boolean Cells
