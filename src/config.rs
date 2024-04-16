@@ -49,14 +49,10 @@ where
     pub(crate) fn conditional_ec_add_gate(&self, meta: &mut VirtualCells<F>) -> Expression<F> {
         let one = Expression::Constant(F::ONE);
 
-        // x3 = (x1*y2+y1*x2)/(1+d*x1*x2*y1*y2) -> (x1*y2+y1*x2)/(1+d*x1*x2*y1*y2) - x3 == 0
-        // y3 = (y1*y2-a*x1*x2)/(1-d*x1*x2*y1*y2) -> (y1*y2-a*x1*x2)/(1-d*x1*x2*y1*y2) - y3 == 0
-
         let constant_a = F::from(5).neg();
         let constant_d = F::from_repr(halo2curves::bandersnatch::BandersnatchTE::d().to_repr()).unwrap();
 
         // let constant_d: F = halo2curves::bandersnatch::BandersnatchTE::d().try_into();
-        // FIXME: currently hardcoded for bandersnatch
         let curve_param_a_expr = Expression::Constant(constant_a);
         let curve_param_d_expr = Expression::Constant(constant_d);
 
@@ -78,18 +74,11 @@ where
 
         let dividend_2 = b0.clone() * b1.clone() - curve_param_a_expr.clone() * a0.clone() * a1.clone();
 
-        // let res = one.clone() / divider_1.clone();
-        //                          (x3 * (1+d*x1*x2*y1*y2) - x1*y2+y1*x2)
+
         let x3_comp = a2.clone() * divider_1 - dividend_1;
 
         let y3_comp = b2.clone() * divider_2 - dividend_2;
 
-        //      (x2-x1)/(y2-y1) = (x3-x1)/(-y3-y1)
-        // =>   (x3-x1)(y2-y1) + (x2-x1)(y3+y1) = 0
-        //
-        // we do not want to open up the above equations
-        // a fully expanded one will require 6 muls while the current
-        // one only requires 2 muls
 
         // | a  | b  |
         // -----------
@@ -100,6 +89,9 @@ where
         // Given (x1, y1), (x2, y2)
         // if condition is true, we return (x1, y1) + (x2, y2)
         // else we return (x1, y1)
+        // x3 = (x1*y2+y1*x2)/(1+d*x1*x2*y1*y2) -> (x1*y2+y1*x2)/(1+d*x1*x2*y1*y2) - x3 == 0
+        // y3 = (y1*y2-a*x1*x2)/(1-d*x1*x2*y1*y2) -> (y1*y2-a*x1*x2)/(1-d*x1*x2*y1*y2) - y3 == 0
+
         condition.clone() * x3_comp.clone() 
         + condition.clone() * y3_comp.clone()
         + (one.clone() - condition.clone()) * (a2.clone() - a0)
@@ -118,34 +110,19 @@ where
         let constant_a = F::from(5).neg();
         let constant_d = F::from_repr(halo2curves::bandersnatch::BandersnatchTE::d().to_repr()).unwrap();
 
-        // let constant_d: F = halo2curves::bandersnatch::BandersnatchTE::d().try_into();
-        // FIXME: currently hardcoded for bandersnatch
+
         let curve_param_a_expr = Expression::Constant(constant_a);
         let curve_param_d_expr = Expression::Constant(constant_d);
-
-
-        // let two = Expression::Constant(F::from(2));
-        // let three = Expression::Constant(F::from(3));
-        // // FIXME: currently hardcoded for Grumpkin curve
-        // let curve_param_b = -F::from(78675968000000);
-        // let curve_param_b_expr = Expression::Constant(curve_param_b);
 
         let a0 = meta.query_advice(self.a, Rotation::cur());
         let b0 = meta.query_advice(self.b, Rotation::cur());
         let a1 = meta.query_advice(self.a, Rotation::next());
         let b1 = meta.query_advice(self.b, Rotation::next());
 
-
-
         /*
             (x1*y1+y1*x1) - x3 * (1+d*x1*x1*y1*y1) == 0
             (y1*y1-a*x1*x1) - y3 * (1-d*x1*x1*y1*y1) == 0
          */
-
-
-        // the slope: 3^x1^2 / 2y^1 // actually:  3^x1^2 + a / 2y^1
-        // therefore: 2y1 * (y3 + y1) + 3x1^2 * (x3 - x1) = 0
-
         // | a  | b  |
         // -----------
         // | x1 | y1 |
@@ -159,7 +136,7 @@ where
         // + a1.clone() * a1.clone() * a1
         //     - b1.clone() * b1
         //     + curve_param_b_expr
-        + one.clone()-one.clone()
+        // + one.clone()-one.clone()
     }
 
     /// (x1, y1) is on curve
