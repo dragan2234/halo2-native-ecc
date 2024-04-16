@@ -165,17 +165,21 @@ where
     /// (x1, y1) is on curve
     /// TODO: change for bandersnatch
     pub(crate) fn on_curve_gate(&self, meta: &mut VirtualCells<F>) -> Expression<F> {
-        // FIXME: currently hardcoded for Grumpkin curve
-        let curve_param_b = -F::from(17);
-        let curve_param_b_expr = Expression::Constant(curve_param_b);
 
-        let zero = Expression::Constant(F::from(0));
+        let one = Expression::Constant(F::from(1));
 
-        let a0 = meta.query_advice(self.a, Rotation::cur());
-        let b0 = meta.query_advice(self.b, Rotation::cur());
-        // (1 - q1) * q2 * (a^3 - b^2 - 17) == c
-        // a0.clone() * a0.clone() * a0 - b0.clone() * b0 + curve_param_b_expr
-        zero
+        let constant_a = F::from(5).neg();
+        let constant_d = F::from_repr(halo2curves::bandersnatch::BandersnatchTE::d().to_repr()).unwrap();
+
+        let curve_param_a_expr = Expression::Constant(constant_a);
+        let curve_param_d_expr = Expression::Constant(constant_d);
+
+        let a0 = meta.query_advice(self.a, Rotation::cur()); // x
+        let b0 = meta.query_advice(self.b, Rotation::cur()); // y
+
+
+        // −5x^2+y^2 = 1+dx^2*y^2
+        curve_param_a_expr * a0.clone().square() + b0.clone().square() - one - curve_param_d_expr * a0.clone().square() * b0.clone().square()
     }
 
     /// partial bit decom
