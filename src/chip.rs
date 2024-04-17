@@ -13,9 +13,9 @@ use crate::config::ECConfig;
 #[derive(Clone, Debug)]
 pub struct ECChip<C, F>
 where
-    // the embedded curve, i.e., Grumpkin
+    // the embedded curve, i.e., Bandersnatch
     C: CurveAffine<Base = F>,
-    // the field for circuit, i.e., BN::Scalar
+    // the field for circuit, i.e., BLS12_381::Scalar
     F: Field,
 {
     config: ECConfig<C, F>,
