@@ -1,7 +1,7 @@
 use std::u128;
 
-use halo2_proofs::circuit::Value;
-use halo2_proofs::halo2curves::ff::PrimeField;
+use halo2_frontend::circuit::Value;
+use halo2curves::ff::PrimeField;
 use halo2curves::CurveAffine;
 
 pub(crate) fn leak<T: Copy + Default>(a: &Value<&T>) -> T {
@@ -71,18 +71,18 @@ pub(crate) fn decompose_u128(a: &u128) -> Vec<u64> {
 }
 
 #[inline]
-// hardcoded value for `-2^256 * generator` for Grumpkin curve
+// hardcoded value for `-2^256 * generator` for Bandersnatch curve
 pub(crate) fn neg_generator_times_2_to_256<C, F>() -> (C, F, F)
 where
     F: PrimeField<Repr = [u8; 32]>,
     C: CurveAffine<Base = F>,
 {
     let x = F::from_str_vartime(
-        "18292374296067206172215749431916515128228165256807037435601971767767562625877",
+        "11025583721552956980921245725224418805776405746874274924600918176127939423846",
     )
     .unwrap();
     let y = F::from_str_vartime(
-        "8411761026004062292626067694055242675827541323706122037355419552115320964415",
+        "19554274355227010597378090074353559709030141777714044885277836694909175034562",
     )
     .unwrap();
     (C::from_xy(x, y).unwrap(), x, y)
@@ -91,14 +91,17 @@ where
 #[cfg(test)]
 mod test {
     use halo2_proofs::arithmetic::Field;
-    use halo2curves::grumpkin::Fq;
-    use halo2curves::grumpkin::Fr;
+    use halo2curves::bandersnatch;
+    use halo2curves::bandersnatch::Fp;
+    use halo2curves::bandersnatch::Fr;
+    use halo2curves::group::Curve;
 
     use crate::util::byte_to_le_bits;
     use crate::util::to_le_bits;
 
     use super::decompose_u128;
     use super::field_decompose;
+
 
     #[test]
     fn test_to_bites() {
@@ -138,7 +141,7 @@ mod test {
     fn test_field_decom() {
         let mut rng = ark_std::test_rng();
         let a = Fr::random(&mut rng);
-        let (_high, _low) = field_decompose::<Fq, Fr>(&a);
+        let (_high, _low) = field_decompose::<Fp, Fr>(&a);
 
         // println!("{:?}", a);
         // println!("{:?}", high);

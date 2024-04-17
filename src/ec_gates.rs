@@ -19,9 +19,9 @@ mod tests;
 
 pub trait NativeECOps<C, F>
 where
-    // the embedded curve, i.e., Grumpkin
+    // the embedded curve, i.e., Bandersnatch
     C: CurveAffine<Base = F>,
-    // the field for circuit, i.e., BN::Scalar
+    // the field for circuit, i.e., BLS12_381::Scalar
     F: PrimeField,
 {
     type Config;
@@ -144,7 +144,13 @@ where
         p: &C,
         offset: &mut usize,
     ) -> Result<Self::AssignedECPoint, Error> {
-        let p = p.coordinates().unwrap();
+
+        // let ifje = p.is_identity().into();
+        // println!("print is: {:?}:", p.coordinates());
+        let p = p.coordinates().unwrap(); // 18026174705495711157233938068904690894407602835950541490148672285549697209731
+        // println!("print X is: {:?}:", p.x());
+        // println!("print Y is: {:?}:", p.y());
+
         let x = region.assign_advice(|| "x", config.a, *offset, || Value::known(*p.x()))?;
         let y = region.assign_advice(|| "y", config.b, *offset, || Value::known(*p.y()))?;
         let res = Self::AssignedECPoint::new(x, y, *offset);
@@ -172,7 +178,9 @@ where
             println!(
                 "[on curve check]           selector: {}, point: {}",
                 *offset - 1,
-                p.offset
+                p.offset,
+                // p.x,
+                // p.y
             );
         }
 
@@ -262,19 +270,21 @@ where
         config.q2.enable(region, *offset - 1)?;
         let p1_witness = p1.witness();
         let p2 = (p1_witness + p1_witness).to_affine();
-        let p2 = self.load_private_point_unchecked(region, config, &p2, offset)?;
+        let p2_asigned = self.load_private_point_unchecked(region, config, &p2, offset)?;
 
         #[cfg(feature = "verbose")]
         {
             println!(
-                "[point double]             selector: {}, points: {} {}",
+                "[point double]             selector: {}, points: {} {}, \n x: {:?} \n, y: {:?} \n ",
                 *offset - 1,
                 p1.offset,
-                p2.offset,
+                p2_asigned.offset,
+                p2_asigned.x.value(),
+                p2_asigned.y.value()
             );
         }
 
-        Ok(p2)
+        Ok(p2_asigned)
     }
 
     /// Decompose a scalar into a vector of boolean Cells

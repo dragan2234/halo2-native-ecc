@@ -5,9 +5,11 @@ use halo2_proofs::circuit::SimpleFloorPlanner;
 use halo2_proofs::dev::MockProver;
 use halo2_proofs::plonk::Circuit;
 use halo2_proofs::plonk::ConstraintSystem;
-use halo2_proofs::plonk::Error;
-use halo2curves::grumpkin::Fq;
-use halo2curves::grumpkin::G1Affine;
+use halo2_proofs::plonk::ErrorFront;
+// use halo2curves::grumpkin::Fq;
+use halo2curves::bandersnatch::BandersnatchAffine;
+use halo2curves::bandersnatch::Fp;
+// use halo2curves::bls12_381::Fp;
 
 use crate::arith_gates::ArithOps;
 use crate::chip::ECChip;
@@ -16,30 +18,33 @@ use crate::ec_gates::NativeECOps;
 
 #[derive(Default, Debug, Clone, Copy)]
 struct ArithTestCircuit {
-    f1: Fq,
-    f2: Fq,
-    f3: Fq,      // f3 = f1 + f2
-    f4: Fq,      // f4 = f1 * f2
-    f5: [Fq; 6], // partial bit decom
+    f1: Fp,
+    f2: Fp,
+    f3: Fp,      // f3 = f1 + f2
+    f4: Fp,      // f4 = f1 * f2
+    f5: [Fp; 6], // partial bit decom
 }
 
-impl Circuit<Fq> for ArithTestCircuit {
-    type Config = ECConfig<G1Affine, Fq>;
+impl Circuit<Fp> for ArithTestCircuit {
+    type Config = ECConfig<BandersnatchAffine, Fp>;
     type FloorPlanner = SimpleFloorPlanner;
+
+    // #[cfg(feature = "circuit-params")]
+    type Params = ();
 
     fn without_witnesses(&self) -> Self {
         Self::default()
     }
 
-    fn configure(meta: &mut ConstraintSystem<Fq>) -> Self::Config {
+    fn configure(meta: &mut ConstraintSystem<Fp>) -> Self::Config {
         ECChip::configure(meta)
     }
 
     fn synthesize(
         &self,
         config: Self::Config,
-        mut layouter: impl Layouter<Fq>,
-    ) -> Result<(), Error> {
+        mut layouter: impl Layouter<Fp>,
+    ) -> Result<(), ErrorFront> {
         let field_chip = ECChip::construct(config.clone());
 
         layouter.assign_region(
@@ -92,7 +97,7 @@ impl Circuit<Fq> for ArithTestCircuit {
                 }
 
                 // pad the last two rows
-                field_chip.pad(&mut region, &config, &mut offset)?;
+                field_chip.pad(&mut region, &config, &mut offset).unwrap();
 
                 Ok(())
             },
@@ -108,18 +113,18 @@ fn test_field_ops() {
 
     let mut rng = test_rng();
 
-    let f1 = Fq::random(&mut rng);
-    let f2 = Fq::random(&mut rng);
+    let f1 = Fp::random(&mut rng);
+    let f2 = Fp::random(&mut rng);
     let f3 = f1 + f2;
     let f4 = f1 * f2;
     {
         let f5 = [
-            Fq::one(),
-            Fq::zero(),
-            Fq::zero(),
-            Fq::one(),
+            Fp::one(),
+            Fp::zero(),
+            Fp::zero(),
+            Fp::one(),
             f1,
-            f1 * Fq::from(16) + Fq::from(9),
+            f1 * Fp::from(16) + Fp::from(9),
         ];
         let circuit = ArithTestCircuit { f1, f2, f3, f4, f5 };
 
@@ -131,12 +136,12 @@ fn test_field_ops() {
     {
         let f3 = f1 + f1;
         let f5 = [
-            Fq::one(),
-            Fq::zero(),
-            Fq::zero(),
-            Fq::one(),
+            Fp::one(),
+            Fp::zero(),
+            Fp::zero(),
+            Fp::one(),
             f1,
-            f1 * Fq::from(16) + Fq::from(9),
+            f1 * Fp::from(16) + Fp::from(9),
         ];
         let circuit = ArithTestCircuit { f1, f2, f3, f4, f5 };
 
@@ -147,12 +152,12 @@ fn test_field_ops() {
     {
         let f4 = f1 * f1;
         let f5 = [
-            Fq::one(),
-            Fq::zero(),
-            Fq::zero(),
-            Fq::one(),
+            Fp::one(),
+            Fp::zero(),
+            Fp::zero(),
+            Fp::one(),
             f1,
-            f1 * Fq::from(16) + Fq::from(9),
+            f1 * Fp::from(16) + Fp::from(9),
         ];
         let circuit = ArithTestCircuit { f1, f2, f3, f4, f5 };
 
@@ -162,12 +167,12 @@ fn test_field_ops() {
     // error case: not binary
     {
         let f5 = [
-            Fq::from(2),
-            Fq::zero(),
-            Fq::zero(),
-            Fq::one(),
+            Fp::from(2),
+            Fp::zero(),
+            Fp::zero(),
+            Fp::one(),
             f1,
-            f1 * Fq::from(16) + Fq::from(10),
+            f1 * Fp::from(16) + Fp::from(10),
         ];
         let circuit = ArithTestCircuit { f1, f2, f3, f4, f5 };
 
@@ -177,12 +182,12 @@ fn test_field_ops() {
     // error case: sum not equal
     {
         let f5 = [
-            Fq::zero(),
-            Fq::zero(),
-            Fq::zero(),
-            Fq::one(),
+            Fp::zero(),
+            Fp::zero(),
+            Fp::zero(),
+            Fp::one(),
             f1,
-            f1 * Fq::from(16) + Fq::from(10),
+            f1 * Fp::from(16) + Fp::from(10),
         ];
         let circuit = ArithTestCircuit { f1, f2, f3, f4, f5 };
 

@@ -6,15 +6,16 @@ use halo2_proofs::halo2curves::ff::PrimeField;
 use halo2_proofs::halo2curves::CurveAffine;
 use halo2_proofs::plonk::ConstraintSystem;
 use halo2_proofs::plonk::Expression;
+use halo2curves::bandersnatch::Bandersnatch;
 
 use crate::config::ECConfig;
 
 #[derive(Clone, Debug)]
 pub struct ECChip<C, F>
 where
-    // the embedded curve, i.e., Grumpkin
+    // the embedded curve, i.e., Bandersnatch
     C: CurveAffine<Base = F>,
-    // the field for circuit, i.e., BN::Scalar
+    // the field for circuit, i.e., BLS12_381::Scalar
     F: Field,
 {
     config: ECConfig<C, F>,
@@ -41,7 +42,7 @@ where
 impl<C, F> ECChip<C, F>
 where
     C: CurveAffine<Base = F>,
-    F: PrimeField,
+    F: PrimeField<Repr = [u8; 32]>,
 {
     pub fn construct(config: <Self as Chip<F>>::Config) -> Self {
         Self {
